@@ -21,7 +21,7 @@ pipeline {
         stage('Infrastructure') {
             steps {
                 dir('Terraform/eks-modules') {
-                    sh 'terraform init'
+                    sh 'CHECKPOINT_DISABLE=1 terraform init'
                     sh 'terraform apply -auto-approve'
                 }
                 sh 'aws eks update-kubeconfig --name my-eks-cluster --region us-west-2'
