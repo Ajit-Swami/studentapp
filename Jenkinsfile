@@ -21,8 +21,8 @@ pipeline {
         stage('Infrastructure') {
             steps {
                 dir('Terraform/eks-modules') {
-                    sh 'terraform init -upgrade'
-                    sh 'terraform apply -auto-approve'
+                    sh 'export AWS_ACCESS_KEY_ID=${aws_access_key} && export AWS_SECRET_ACCESS_KEY=${aws_secret_key} && terraform init -upgrade'
+                    sh 'export AWS_ACCESS_KEY_ID=${aws_access_key} && export AWS_SECRET_ACCESS_KEY=${aws_secret_key} && terraform apply -auto-approve'
                 }
                 sh 'aws eks update-kubeconfig --name my-eks-cluster --region us-west-2'
             }
