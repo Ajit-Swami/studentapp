@@ -2,7 +2,7 @@ pipeline {
     agent any
 
     environment {
-        PATH = "C:\Program Files\Docker\Docker\resources\bin"
+        PATH = "C:/Program Files/Docker/Docker/resources/bin"
         REGISTRY = 'docker.io/ajit189'
         aws_access_key = credentials('aws-access-key')
         aws_secret_key = credentials('aws-secret-key')
@@ -15,7 +15,7 @@ pipeline {
     stages {
         stage('Pull stage') {
             steps {
-                git url: 'https://github.com/Ishikapbhatt/MDA4.git', branch: 'main'
+                git url: 'https://github.com/Ajit-Swami/studentapp.git', branch: 'main'
             }
         }
 
