@@ -22,41 +22,41 @@ pipeline {
         stage('Infrastructure') {
             steps {
                 dir('Terraform/eks-modules') {
-                    bat 'terraform init'
-                    bat 'terraform apply -auto-approve'
+                    powershell 'terraform init'
+                    powershell 'terraform apply -auto-approve'
                 }
-                bat 'aws eks update-kubeconfig --name my-eks-cluster --region us-west-2'
+                powershell 'aws eks update-kubeconfig --name my-eks-cluster --region us-west-2'
             }
         }
 
         stage('Build') {
             steps {
                 dir('docker/studentapp/database') {
-                    bat 'docker build --platform linux/amd64 -t ${REGISTRY}/studentapp-db:latest .'
+                    powershell 'docker build --platform linux/amd64 -t ${REGISTRY}/studentapp-db:latest .'
                 }
                 dir('docker/studentapp/backend') {
-                    bat 'docker build --platform linux/amd64 -t ${REGISTRY}/studentapp-be:latest .'
+                    powershell 'docker build --platform linux/amd64 -t ${REGISTRY}/studentapp-be:latest .'
                 }
                 dir('docker/studentapp/frontend') {
-                    bat 'docker build --platform linux/amd64 -t ${REGISTRY}/studentapp-fe:latest .'
+                    powershell 'docker build --platform linux/amd64 -t ${REGISTRY}/studentapp-fe:latest .'
                 }
             }
         }
 
         stage('Push stage') {
             steps {
-                bat 'docker push ${REGISTRY}/studentapp-db:latest'
-                bat 'docker push ${REGISTRY}/studentapp-be:latest'
-                bat 'docker push ${REGISTRY}/studentapp-fe:latest'
+                powershell 'docker push ${REGISTRY}/studentapp-db:latest'
+                powershell 'docker push ${REGISTRY}/studentapp-be:latest'
+                powershell 'docker push ${REGISTRY}/studentapp-fe:latest'
             }
         }
 
         stage('Deploy') {
             steps {
                 dir('KUbernetes/Studentapp') {
-                    bat 'kubectl apply -f Database/'
-                    bat 'kubectl apply -f Backend/'
-                    bat 'kubectl apply -f Frontend/'
+                    powershell 'kubectl apply -f Database/'
+                    powershell 'kubectl apply -f Backend/'
+                    powershell 'kubectl apply -f Frontend/'
                 }
             }
         }
