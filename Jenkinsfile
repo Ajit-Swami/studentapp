@@ -30,13 +30,13 @@ pipeline {
 
         stage('Build') {
             steps {
-                dir('docker/studentapp/database') {
+                dir('docker/database') {
                     sh 'docker build --platform linux/amd64 -t ${REGISTRY}/studentapp-db:latest .'
                 }
-                dir('docker/studentapp/backend') {
+                dir('docker/backend') {
                     sh 'docker build --platform linux/amd64 -t ${REGISTRY}/studentapp-be:latest .'
                 }
-                dir('docker/studentapp/frontend') {
+                dir('docker/frontend') {
                     sh 'docker build --platform linux/amd64 -t ${REGISTRY}/studentapp-fe:latest .'
                 }
             }
@@ -52,7 +52,7 @@ pipeline {
 
         stage('Deploy') {
             steps {
-                dir('KUbernetes/Studentapp') {
+                dir('Kubernetes/Studentapp') {
                     sh 'kubectl apply -f Database/'
                     sh 'kubectl apply -f Backend/'
                     sh 'kubectl apply -f Frontend/'
