@@ -21,7 +21,6 @@ pipeline {
         stage('Infrastructure') {
             steps {
                 dir('Terraform/eks-modules') {
-                    sh 'rm -rf .terraform'
                     sh 'terraform init -upgrade'
                     sh 'terraform apply -auto-approve'
                 }
