@@ -43,23 +43,35 @@ pipeline {
         }
 
         stage('Push stage') {
-    steps {
-        withCredentials([
-            usernamePassword(
-                credentialsId: 'docker-hub-credentials',
-                usernameVariable: 'DOCKER_USER',
-                passwordVariable: 'DOCKER_PASS'
-            )
-        ]) {
-            sh '''
-                echo "$DOCKER_PASS" | docker login docker.io -u "$DOCKER_USER" --password-stdin
+            steps {
+                withCredentials([
+                    usernamePassword(
+                        credentialsId: 'docker-hub-credentials',
+                        usernameVariable: 'DOCKER_USER',
+                        passwordVariable: 'DOCKER_PASS'
+                    )
+                ]) {
+                    sh '''
+                        echo "$DOCKER_PASS" | docker login docker.io -u "$DOCKER_USER" --password-stdin
 
-                docker push ${REGISTRY}/studentapp-db:latest
-                docker push ${REGISTRY}/studentapp-be:latest
-                docker push ${REGISTRY}/studentapp-fe:latest
+                        docker push ${REGISTRY}/studentapp-db:latest
+                        docker push ${REGISTRY}/studentapp-be:latest
+                        docker push ${REGISTRY}/studentapp-fe:latest
 
-                docker logout docker.io
-            '''
+                        docker logout docker.io
+                    '''
+                }
+            }
+        }
+
+        stage('Deploy') {
+            steps {
+                dir('Kubernetes/Studentapp') {
+                    sh 'kubectl apply -f Database/'
+                    sh 'kubectl apply -f Backend/'
+                    sh 'kubectl apply -f Frontend/'
+                }
+            }
         }
     }
 }
