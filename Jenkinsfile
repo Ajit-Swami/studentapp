@@ -57,7 +57,7 @@ pipeline {
                 sh 'sleep 30'
 
                 // Run backend
-                sh 'docker run -d --name studentapp-be --network studentapp-network -p 8080:8080 ${REGISTRY}/studentapp-be:latest'
+                sh 'docker run -d --name studentapp-be --network studentapp-network -p 8081:8080 ${REGISTRY}/studentapp-be:latest'
 
                 // Wait for backend to be ready
                 sh 'sleep 20'
@@ -71,17 +71,17 @@ pipeline {
             steps {
                 sh 'docker ps'
                 sh 'curl -f http://localhost:80 || echo "Frontend check failed"'
-                sh 'curl -f http://localhost:8080 || echo "Backend check failed"'
+                sh 'curl -f http://localhost:8081 || echo "Backend check failed"'
             }
         }
     }
 
     post {
         success {
-            echo 'Pipeline completed successfully!'
+            echo "Pipeline completed successfully!"
         }
         failure {
-            echo 'Pipeline failed. Check logs for details.'
+            echo "Pipeline failed. Check logs for details."
         }
     }
 }
