@@ -66,7 +66,7 @@ pipeline {
 
         stage('Deploy') {
             steps {
-                dir('Kubernetes/Studentapp') {
+                dir('Kubernetes') {
                     sh 'kubectl apply -f Database/'
                     sh 'kubectl apply -f Backend/'
                     sh 'kubectl apply -f Frontend/'
