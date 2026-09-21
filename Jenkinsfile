@@ -3,8 +3,6 @@ pipeline {
 
     environment {
         REGISTRY = 'docker.io/ajit189'
-        aws_access_key = credentials('aws-access-key')
-        aws_secret_key = credentials('aws-secret-key')
     }
 
     options {
@@ -18,60 +16,72 @@ pipeline {
             }
         }
 
-        stage('Infrastructure') {
-            steps {
-                dir('Terraform/eks-modules') {
-                    sh 'export AWS_ACCESS_KEY_ID=${aws_access_key} && export AWS_SECRET_ACCESS_KEY=${aws_secret_key} && terraform init -upgrade'
-                    sh 'export AWS_ACCESS_KEY_ID=${aws_access_key} && export AWS_SECRET_ACCESS_KEY=${aws_secret_key} && terraform apply -auto-approve'
-                }
-                sh 'export AWS_ACCESS_KEY_ID=${aws_access_key} && export AWS_SECRET_ACCESS_KEY=${aws_secret_key} && aws eks update-kubeconfig --name my-eks-cluster --region us-west-2'
-            }
-        }
-
         stage('Build') {
             steps {
                 dir('docker/database') {
-                    sh 'docker build --platform linux/amd64 -t ${REGISTRY}/studentapp-db:latest .'
+                    sh 'docker build -t ${REGISTRY}/studentapp-db:latest .'
                 }
                 dir('docker/backend') {
-                    sh 'docker build --platform linux/amd64 -t ${REGISTRY}/studentapp-be:latest .'
+                    sh 'docker build -t ${REGISTRY}/studentapp-be:latest .'
                 }
                 dir('docker/frontend') {
-                    sh 'docker build --platform linux/amd64 -t ${REGISTRY}/studentapp-fe:latest .'
+                    sh 'docker build -t ${REGISTRY}/studentapp-fe:latest .'
                 }
             }
         }
 
         stage('Push stage') {
             steps {
-                withCredentials([
-                    usernamePassword(
-                        credentialsId: 'docker-hub-credentials',
-                        usernameVariable: 'DOCKER_USER',
-                        passwordVariable: 'DOCKER_PASS'
-                    )
-                ]) {
-                    sh '''
-                        echo "$DOCKER_PASS" | docker login docker.io -u "$DOCKER_USER" --password-stdin
-
-                        docker push ${REGISTRY}/studentapp-db:latest
-                        docker push ${REGISTRY}/studentapp-be:latest
-                        docker push ${REGISTRY}/studentapp-fe:latest
-
-                        docker logout docker.io
-                    '''
+                withCredentials([usernamePassword(credentialsId: 'docker-hub-credentials', usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASS')]) {
+                    sh 'echo $DOCKER_PASS | docker login -u $DOCKER_USER --password-stdin'
                 }
+                sh 'docker push ${REGISTRY}/studentapp-db:latest'
+                sh 'docker push ${REGISTRY}/studentapp-be:latest'
+                sh 'docker push ${REGISTRY}/studentapp-fe:latest'
             }
         }
 
         stage('Deploy') {
             steps {
-                dir('Kubernetes') {
-                    sh 'kubectl apply -f Database/'
-                    sh 'kubectl apply -f Backend/'
-                    sh 'kubectl apply -f Frontend/'
-                }
+                // Stop existing containers
+                sh 'docker stop studentapp-db studentapp-be studentapp-fe || true'
+                sh 'docker rm studentapp-db studentapp-be studentapp-fe || true'
+
+                // Create network if not exists
+                sh 'docker network create studentapp-network || true'
+
+                // Run database
+                sh 'docker run -d --name studentapp-db --network studentapp-network -p 3306:3306 ${REGISTRY}/studentapp-db:latest'
+
+                // Wait for database to be ready
+                sh 'sleep 30'
+
+                // Run backend
+                sh 'docker run -d --name studentapp-be --network studentapp-network -p 8080:8080 ${REGISTRY}/studentapp-be:latest'
+
+                // Wait for backend to be ready
+                sh 'sleep 20'
+
+                // Run frontend
+                sh 'docker run -d --name studentapp-fe --network studentapp-network -p 80:80 ${REGISTRY}/studentapp-fe:latest'
             }
+        }
+
+        stage('Verify') {
+            steps {
+                sh 'docker ps'
+                sh 'curl -f http://localhost:80 || echo "Frontend check failed"'
+                sh 'curl -f http://localhost:8080 || echo "Backend check failed"'
+            }
+        }
+    }
+
+    post {
+        success {
+            echo 'Pipeline completed successfully!'
+        }
+        failure {
+            echo 'Pipeline failed. Check logs for details.'
         }
     }
 }
